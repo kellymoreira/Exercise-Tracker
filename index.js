@@ -12,12 +12,9 @@ app.use(express.static("public"));
 
 let uri =
   "mongodb+srv://kelly:" +
-  process.env.PW +
+  process.env.MONGODB +
   "@cluster0.tdinhi7.mongodb.net/exercise_tracker?retryWrites=true&w=majority";
 
-/*
-let uri = "mongodb+srv://kelly:" + process.env['PW'] + "@cluster0.tdinhi7.mongodb.net/exercise_tracker?retryWrites=true&w=majority";
-*/
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
 let exSchema = new mongoose.Schema({
@@ -39,25 +36,6 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/views/index.html");
 });
 
-app.post("/api/users", async (req, res) => {
-  const { username } = req.body;
-  let user = await User.findOne({ username: req.body.username });
-  if (!user) {
-    user = new User({ username: username });
-    await user.save();
-
-    res.status(200).json(user);
-  } else {
-    res.status(400).send("This user already exists.");
-  }
-});
-
-app.get("/api/users", (req, res) => {
-  User.find()
-    .then((result) => res.status(200).json(result))
-    .catch((error) => res.status(400).send(error));
-});
-
 const getDate = (date) => {
   if (!date) {
     return new Date().toDateString();
@@ -70,6 +48,31 @@ const getDate = (date) => {
 
   return correctDate.toDateString();
 };
+
+app.post("/api/users", async (req, res) => {
+  const { username } = req.body;
+  let user = await User.findOne({ username: req.body.username });
+  if (!user) {
+    user = new User({ username: username });
+    await user.save();
+
+    // Modify response object to ensure the desired order
+    const responseObject = {
+      username: user.username,
+      _id: user._id,
+    };
+
+    res.status(200).json(responseObject);
+  } else {
+    res.status(400).send("This user already exists.");
+  }
+});
+
+app.get("/api/users", (req, res) => {
+  User.find()
+    .then((result) => res.status(200).json(result))
+    .catch((error) => res.status(400).send(error));
+});
 
 app.post("/api/users/:_id/exercises", async (req, res) => {
   const { description, duration, date } = req.body;
